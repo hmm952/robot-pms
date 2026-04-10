@@ -80,6 +80,31 @@ npm run dev
 
 使用 `admin` / `admin123` 登录，左侧可切换六个模块：**项目总览、任务管理、评审管理、合同管理、人力与 KPI、竞品分析**。顶部下拉框可切换当前项目（示例已预置一个机器人研发项目）。
 
+## 线上部署（单服务：Express 托管前端 dist）
+
+构建出 `client/dist` 且其中存在 `index.html` 时，**仅启动 `server`** 即可在同一端口提供前端页面与 `/api`，适合 [Render](https://render.com) 等免费 Web Service（简历里一条链接即可）。
+
+### 本地验证生产形态
+
+```bash
+cd client && npm ci && npm run build
+cd ../server && npm ci && npm start
+```
+
+浏览器访问 `http://localhost:3001`（或 `.env` / 平台注入的 `PORT`）。前端开发仍推荐使用 `client` 的 `npm run dev` + 代理，无需每次构建。
+
+### Render 示例配置
+
+将 **Root Directory** 设为仓库内的 `robot-pms`（若整仓就是本项目则留空根目录）。
+
+| 项 | 值 |
+|----|-----|
+| **Build Command** | `cd client && npm ci && npm run build && cd ../server && npm ci` |
+| **Start Command** | `cd server && npm start` |
+| **Environment** | `JWT_SECRET` 设为长随机串；`NODE_VERSION` 建议 **22** 或 **24**（与 `server/package.json` 的 `engines` 一致）。`PORT` 由平台注入，勿写死。 |
+
+说明：免费实例磁盘多为**临时**的，SQLite 演示数据可能在休眠或重装后丢失；冷启动后首次访问可能较慢。
+
 ## 权限说明
 
 | 角色 | 说明 |

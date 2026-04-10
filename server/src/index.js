@@ -3,6 +3,7 @@
  * REST 前缀: /api
  */
 import 'dotenv/config';
+import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -36,6 +37,10 @@ const app = express();
 const PORT = Number(process.env.PORT || 3001);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/** 生产构建的前端产物：robot-pms/client/dist（与 server 同级） */
+const clientDist = path.join(__dirname, '..', '..', 'client', 'dist');
+const clientIndexHtml = path.join(clientDist, 'index.html');
+const serveClient = fs.existsSync(clientIndexHtml);
 
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
@@ -63,12 +68,25 @@ app.use('/api/competitors', competitorsRoutes);
 app.use('/api/integrations', integrationsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 
-// 404
+if (serveClient) {
+  app.use(express.static(clientDist, { index: false }));
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(clientIndexHtml, (err) => (err ? next(err) : undefined));
+  });
+}
+
+// 404（含未匹配的 /api/*）
 app.use((_req, res) => {
   res.status(404).json({ message: '资源不存在' });
 });
 
 app.listen(PORT, () => {
-  console.log(`[robot-pms] API 已启动: http://localhost:${PORT}`);
-  console.log(`[robot-pms] 健康检查: http://localhost:${PORT}/health`);
+  const base = `http://localhost:${PORT}`;
+  console.log(`[robot-pms] API 已启动: ${base}`);
+  console.log(`[robot-pms] 健康检查: ${base}/health`);
+  if (serveClient) {
+    console.log(`[robot-pms] 已托管前端静态资源: ${clientDist}`);
+  }
 });
